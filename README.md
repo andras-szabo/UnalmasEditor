@@ -3,3 +3,5 @@ For details, see: https://www.qt.io/licensing
 
 # UnalmasEditor
 Unalmas Editor
+
+[ W I P ]
