@@ -235,7 +235,6 @@ void CommunicationThread(std::stop_token stopToken,
 
 }
 
-//<editor-fold desc="SocketWrapper">
 SocketWrapper::SocketWrapper(int port, bool isBlocking)
 {
     _socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -295,9 +294,7 @@ SOCKET SocketWrapper::GetSocket() const
 {
     return _socket;
 }
-//</editor-fold>
 
-//<editor-fold desc="ServerSocketWrapper">
 ServerSocketWrapper::ServerSocketWrapper(int port, int maxSendSize, bool isBlocking)
     : SocketWrapper(port, isBlocking)
 {
@@ -394,9 +391,6 @@ bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
     return _connectedClientSocket != INVALID_SOCKET;
 }
 
-//</editor-fold>
-
-//<editor-fold desc="ClientSocketWrapper">
 ClientSocketWrapper::ClientSocketWrapper(int port, bool isBlocking)
     : SocketWrapper(port, isBlocking)
 {
@@ -420,9 +414,7 @@ ClientSocketWrapper::ClientSocketWrapper(int port, bool isBlocking)
         }
     }
 }
-//</editor-fold>
 
-//<editor-fold desc="WinSockEntity>
 WinSockEntity::WinSockEntity()
 {
     auto constexpr version = MAKEWORD(2, 2);
@@ -487,7 +479,4 @@ bool WinSockEntity::TryGetConnectedClientSocket(SOCKET &socket) const
     socket = _serverSocket.GetConnectedClientSocket();
     return socket != INVALID_SOCKET;
 }
-
-//</editor-fold>
-
 } // namespace Unalmas
