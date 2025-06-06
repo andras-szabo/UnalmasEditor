@@ -202,8 +202,56 @@ int main(int argc, char *argv[])
 
     qDebug() << "Launched handshake thread.";
 
+    // And now
+    bool shouldDisconnect = false;
+    bool didFinishHandshake = false;
+
+    while (!shouldDisconnect)
+    {
+        {
+            std::lock_guard<std::mutex> lock(message_queue_mutex);
+            while (!inbox.empty())
+            {
+                const auto& incomingMsg = inbox.front();
+                qDebug() << "[SERVER] Incoming msg type: " << static_cast<int>(incomingMsg.type);
+                switch (incomingMsg.type)
+                {
+                case Unalmas::MessageType::Undefined:
+                    qDebug() << "[SERVER] Incoming msg payload: " << incomingMsg.payload;
+                    break;
+
+                case Unalmas::MessageType::Handshake:
+                    didFinishHandshake = true;
+                    break;
+
+                case Unalmas::MessageType::Disconnect:
+                    shouldDisconnect = true;
+                    break;
+                }
+
+                inbox.pop();
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(pieMutex);
+            if (didPieFinish)
+            {
+                shouldDisconnect = true;
+            }
+        }
+
+       //TODO - does this make sense?
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
-    return a.exec();
+    auto err = a.exec();
+
+    networkStopSource.request_stop();
+    pieStopSource.request_stop();
+
+    return err;
 }
