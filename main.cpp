@@ -1,8 +1,7 @@
 #include <QApplication>
 
 #include "mainwindow.h"
-#include "unalmas_sockets.h"
-#include "pieloader.h"
+#include "editor.h"
 
 void SendHandshakeAndWaitForResponse(std::stop_token stopToken,
                                      std::queue<Unalmas::TypedMessage>& inbox,
@@ -63,6 +62,10 @@ void SendHandshakeAndWaitForResponse(std::stop_token stopToken,
 
 int main(int argc, char *argv[])
 {
+    Unalmas::Editor editorInstance;
+    editorInstance.CreateServerSocket();
+
+    /*
     Unalmas::WinSockEntity wsEntity;
     if (wsEntity.GetLastError() != 0)
     {
@@ -79,13 +82,14 @@ int main(int argc, char *argv[])
                                                     sendBufSize,
                                                     isBlocking,
                                                     startListening);
+    */
 
     qDebug() << "Started server";
 
-    Unalmas::PieLoader pieLoader;
+    //Unalmas::PieLoader pieLoader;
 
     QApplication a(argc, argv);
-    MainWindow w(&pieLoader);
+    MainWindow w(&editorInstance);
 
     w.show();
 

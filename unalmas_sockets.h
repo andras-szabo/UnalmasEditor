@@ -43,6 +43,14 @@ struct TypedMessage
     std::string payload;
 };
 
+struct ServerSocketConfig
+{
+    int port { 5555 };
+    int sendBufSize { 65536 };
+    bool isBlocking { false };
+    bool startListening { true };
+};
+
 void CommunicationThread(std::stop_token stopToken,
                          SOCKET socket,
                          std::queue<TypedMessage>& inbox,
@@ -109,6 +117,7 @@ public:
 
     bool IsCreated() const;
     int GetLastError() const;
+    SOCKET CreateServerSocket(const ServerSocketConfig& config);
     SOCKET CreateServerSocket(int port, int sendBufSize, bool isBlocking, bool startListening);
     SOCKET CreateClientSocket(int port, bool isBlocking);
     bool TryGetConnectedClientSocket(OUT SOCKET& socket) const;

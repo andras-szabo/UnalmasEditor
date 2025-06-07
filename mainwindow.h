@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "pieloader.h"
+#include "editor.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -15,14 +15,15 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(Unalmas::PieLoader* pieLoader, QWidget *parent = nullptr);
+    MainWindow(Unalmas::Editor* editor, QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:
     void on_actionOpen_triggered();
+    void LaunchCommunicationThreads();
 
 private:
     Ui::MainWindow* _ui { nullptr };
-    Unalmas::PieLoader* _pieLoader { nullptr };
+    Unalmas::Editor* _editor { nullptr };
 };
 #endif // MAINWINDOW_H

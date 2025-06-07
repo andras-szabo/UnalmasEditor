@@ -5,6 +5,9 @@
 #include <iostream>
 
 #include <cstring>
+#include <qdatetime.h>
+#include <qdebug.h>
+#include <qlogging.h>
 #include <windows.h>
 
 namespace Unalmas
@@ -74,8 +77,27 @@ void CommunicationThread(std::stop_token stopToken,
 
     int bytesSentSoFar { 0 };
 
+    WSAPOLLFD pollfd;
+    pollfd.fd = socket;
+    pollfd.events = POLLRDNORM | POLLWRNORM;
+
     while (!stopToken.stop_requested())
     {
+        const int result = WSAPoll(&pollfd, 1, 100);
+
+        if (result == SOCKET_ERROR)
+        {
+            std::cerr << "WSAPoll failed: " << WSAGetLastError() << "\n";
+            break;
+        }
+
+        if (result == 0)
+        {
+            continue;
+        }
+
+        if (pollfd.revents & POLLRDNORM)
+        {
         int bytesReceived = recv(socket, incomingBuffer, incomingBufferSizeBytes, 0);
         if (bytesReceived == 0 && WSAGetLastError() != WSAEWOULDBLOCK)
         {
@@ -131,7 +153,7 @@ void CommunicationThread(std::stop_token stopToken,
                     readPosition += messageBytes;
                 }
 
-                // It's possible that we just finished readong a previously overflown message,
+                // It's possible that we just finished reading a previously overflown message,
                 // in which case the header is expected to be invalid - so we'll need to read the next header,
                 // before we can read the next payload.
 
@@ -161,7 +183,9 @@ void CommunicationThread(std::stop_token stopToken,
             }
         }
 
+        }
         // Then deal with bytes to send
+        if (pollfd.revents & POLLWRNORM)
         {
             std::lock_guard<std::mutex> lock(queueMutex);
             if (!outbox.empty())
@@ -228,9 +252,6 @@ void CommunicationThread(std::stop_token stopToken,
                 }
             }
         }
-
-        // TODO is 10 a good number? Configurable maybe?
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
 }
@@ -252,6 +273,9 @@ SocketWrapper::SocketWrapper(int port, bool isBlocking)
             _isCreated = false;
         }
     }
+
+    BOOL flag = TRUE;
+    setsockopt(_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&flag, sizeof(flag));
 
     InetPton(AF_INET, L"127.0.0.1", &_socketAddress.sin_addr.s_addr);
 }
@@ -441,6 +465,14 @@ bool WinSockEntity::IsCreated() const
 int WinSockEntity::GetLastError() const
 {
     return WSAGetLastError();
+}
+
+SOCKET WinSockEntity::CreateServerSocket(const ServerSocketConfig &config)
+{
+    return CreateServerSocket(config.port,
+                              config.sendBufSize,
+                              config.isBlocking,
+                              config.startListening);
 }
 
 /// <summary>
