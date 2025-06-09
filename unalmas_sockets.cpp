@@ -254,6 +254,8 @@ void CommunicationThread(std::stop_token stopToken,
         }
     }
 
+
+    qDebug() << "Communication thread shutting down.";
 }
 
 SocketWrapper::SocketWrapper(int port, bool isBlocking)
@@ -407,10 +409,16 @@ SOCKET ServerSocketWrapper::BlockUntilAcceptConnectionOrError(std::stop_token st
 
 bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
 {
+    _connectedClientSocket = INVALID_SOCKET;
+
     if (BlockUntilListenOrError(stopToken))
     {
         _connectedClientSocket = BlockUntilAcceptConnectionOrError(stopToken);
     }
+
+    bool isOK = _connectedClientSocket != INVALID_SOCKET;
+
+    qDebug() << "ListenAndAccept finished; success? " << isOK;
 
     return _connectedClientSocket != INVALID_SOCKET;
 }
@@ -485,12 +493,17 @@ SOCKET WinSockEntity::CreateServerSocket(const ServerSocketConfig &config)
 /// <returns>The socket handle.</returns>
 SOCKET WinSockEntity::CreateServerSocket(int port, int sendBufSize, bool isBlocking, bool startListening)
 {
-    _serverSocket = ServerSocketWrapper(port, sendBufSize, isBlocking);
+    if (_serverSocket.GetSocket() == INVALID_SOCKET)
+    {
+        _serverSocket = ServerSocketWrapper(port, sendBufSize, isBlocking);
+    }
 
     if (_serverSocket.IsCreated())
     {
         if (startListening)
         {
+            std::stop_source newStopSource;
+            _serverStopSource.swap(newStopSource);
             _serverThread = std::jthread(&ServerSocketWrapper::ListenAndAccept,
                                          &_serverSocket,
                                          _serverStopSource.get_token());

@@ -18,6 +18,7 @@ public:
     void LaunchCommunicationThreads();
 
     void StartPie(const std::string& gameRuntimeDllPath);
+    void HandleMessages(std::stop_token stopToken);
 
 private:
     Unalmas::WinSockEntity _wsEntity;

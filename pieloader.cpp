@@ -66,6 +66,7 @@ void StartPieProcess(std::stop_token stopToken,
         if (!didProcessExit)
         {
             // Try to terminate child process
+            qDebug() << "Terminating PIE";
             constexpr unsigned int exitCode = 1u;
             TerminateProcess(processInfo.hProcess, exitCode);
         }
@@ -109,6 +110,11 @@ bool PieLoader::DidFinish()
 {
     std::lock_guard<std::mutex> lock(_pieMutex);
     return _didFinish;
+}
+
+std::stop_source &PieLoader::GetPieStopSource()
+{
+    return _pieStopSource;
 }
 
 void PieLoader::TryTeardown()

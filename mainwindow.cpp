@@ -35,6 +35,8 @@ void MainWindow::on_actionOpen_triggered()
 
     if (!fileName.isEmpty())
     {
+        _editor->CreateServerSocket();
+
         _editor->StartPie(fileName.toStdString());
 
         auto* dialog = new QProgressDialog("Please wait...",
@@ -55,11 +57,6 @@ void MainWindow::on_actionOpen_triggered()
             _editor->WaitForPieConnection();
             qDebug() << "Pie connected.\n";
         });
-
-        //dialog->accept();
-        //dialog->deleteLater();
-
-        //_editor->LaunchCommunicationThreads();
 
         auto* watcher = new QFutureWatcher<void>();
 

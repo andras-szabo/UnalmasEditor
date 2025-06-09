@@ -3,6 +3,7 @@
 #include "mainwindow.h"
 #include "editor.h"
 
+/*
 void SendHandshakeAndWaitForResponse(std::stop_token stopToken,
                                      std::queue<Unalmas::TypedMessage>& inbox,
                                      std::queue<Unalmas::TypedMessage>& outbox,
@@ -58,12 +59,12 @@ void SendHandshakeAndWaitForResponse(std::stop_token stopToken,
         qDebug() << "Handshake failed or timed out.";
     }
 }
+*/
 
 
 int main(int argc, char *argv[])
 {
     Unalmas::Editor editorInstance;
-    editorInstance.CreateServerSocket();
 
     /*
     Unalmas::WinSockEntity wsEntity;
@@ -83,8 +84,6 @@ int main(int argc, char *argv[])
                                                     isBlocking,
                                                     startListening);
     */
-
-    qDebug() << "Started server";
 
     //Unalmas::PieLoader pieLoader;
 

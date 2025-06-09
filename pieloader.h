@@ -15,6 +15,7 @@ public:
 
     void StartPie(const std::string& gameRuntimeDll);
     bool DidFinish();
+    std::stop_source& GetPieStopSource();
 
 private:
     std::mutex _pieMutex;
