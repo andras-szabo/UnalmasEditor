@@ -9,11 +9,8 @@ static void SendHandshake(std::stop_token stopToken,
                           std::queue<Unalmas::TypedMessage>& outbox,
                           std::mutex& queueMutex)
 {
-    // Step 1: Place the handshake message in the outbox
-    {
-        std::lock_guard<std::mutex> lock(queueMutex);
-        outbox.push(Unalmas::TypedMessage(Unalmas::MessageType::Handshake, "-"));
-    }
+    std::lock_guard<std::mutex> lock(queueMutex);
+    outbox.push(Unalmas::TypedMessage(Unalmas::MessageType::Handshake, "-"));
 }
 
 Editor::Editor()

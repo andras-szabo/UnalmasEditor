@@ -69,10 +69,37 @@ void CommunicationThread(std::stop_token stopToken,
     constexpr int incomingBufferSizeBytes = 8192;
     char incomingBuffer[incomingBufferSizeBytes];
 
+    // The overflow buffer acts as a kind of staging area for messages
+    // that we couldn't recv() in their entirety. For instance, imagine
+    // that the socket has received several messages, lined up one after
+    // the other, whose combined size is larger than the incoming buffer
+    // size. But we're only able to process the messages in fixed size
+    // chunks. So it's possible that we'll have a message that we couldn't
+    // receive in its enitery. When this happens, we append the bytes
+    // that we did receive to the overflowBuffer; and once the whole
+    // message is received, we construct the actual data in the inbox
+    // from the overflow buffer.
+    // It being a vector enables it to grow as necessary.
     std::vector<char> overflowBuffer;
     overflowBuffer.reserve(incomingBufferSizeBytes);
 
+    // When receiving messages, we first need to receive a fixed-size
+    // header, and that header will tell us how many bytes the actual
+    // message is going to be. The state of this local incomingMessageHeader
+    // tells the reception loop where we are in this process. If we do
+    // have a valid incoming message header, then we have to receive the
+    // actual data, as many bytes as the header says. If however we don't
+    // have a valid incoming message header, then we must receive one; which
+    // we can do, because the size of a MessageHeader is fixed.
+    //
+    // This implementation assumes that header and payload "send" calls on
+    // the client follow each other in lock-step, and that these messages
+    // will arrive in order. The first of these is an assumption; if this is
+    // not the case (so if we're not sending headers and payload interleaved),
+    // then we can't really do anything. The second one is guaranteed by
+    // using TCP packets.
     MessageHeader incomingMessageHeader;
+
     MessageHeader outgoingMessageHeader;
 
     int bytesSentSoFar { 0 };
