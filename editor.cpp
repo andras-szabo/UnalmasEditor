@@ -2,6 +2,7 @@
 #include <qdatetime.h>
 #include <qdebug.h>
 #include <qlogging.h>
+
 namespace Unalmas
 {
 static void SendHandshake(std::stop_token stopToken,
@@ -15,7 +16,7 @@ static void SendHandshake(std::stop_token stopToken,
     }
 }
 
-static void HandleMessages(std::stop_token stopToken,
+/* static void HandleMessages(std::stop_token stopToken,
                                      std::queue<Unalmas::TypedMessage>& inbox,
                                      std::queue<Unalmas::TypedMessage>& outbox,
                                      std::mutex& queueMutex,
@@ -39,7 +40,7 @@ static void HandleMessages(std::stop_token stopToken,
                     break;
 
                 case Unalmas::MessageType::Handshake:
-                    qDebug() << "[SERVER] Incoming handshake!\n";
+                    qDebug() << "[SERVER] Incoming handshake: " << incomingMsg.payload <<"\n";
                     didFinishHandshake = true;
                     break;
 
@@ -63,7 +64,7 @@ static void HandleMessages(std::stop_token stopToken,
         pieStopSource.request_stop();
         networkStopSource.request_stop();
     }
-}
+} */
 
 
 Editor::Editor()
@@ -134,7 +135,8 @@ void Editor::HandleMessages(std::stop_token stopToken)
                     break;
 
                 case Unalmas::MessageType::Handshake:
-                    qDebug() << "[SERVER] Incoming handshake!\n";
+                    qDebug() << "[SERVER] Incoming handshake!";
+                    ExtractScriptDatabase(incomingMsg.payload);
                     didFinishHandshake = true;
                     break;
 
@@ -163,6 +165,15 @@ void Editor::HandleMessages(std::stop_token stopToken)
     {
         _pieLoader.GetPieStopSource().request_stop();
         _networkStopSource.request_stop();
+    }
+}
+
+void Editor::ExtractScriptDatabase(const std::string& handshakePayload)
+{
+    if (!handshakePayload.empty() && handshakePayload != "--empty--")
+    {
+        std::lock_guard<std::mutex> dbLock(_script_database_mutex);
+        _scriptDatabase = Unalmas::DataFile::FromString(handshakePayload);
     }
 }
 

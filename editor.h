@@ -2,6 +2,7 @@
 #define EDITOR_H
 
 #include "unalmas_sockets.h"
+#include "unalmas_datafile.h"
 #include "pieloader.h"
 
 namespace Unalmas
@@ -23,6 +24,10 @@ public:
 private:
     Unalmas::WinSockEntity _wsEntity;
     Unalmas::PieLoader _pieLoader;
+
+    void ExtractScriptDatabase(const std::string& handshakePayload);
+    std::mutex _script_database_mutex;
+    Unalmas::DataFile _scriptDatabase;
 
     // TODO - these feel like they belong to a different level of abstraction
     Unalmas::ServerSocketConfig _serverSocketConfig;
