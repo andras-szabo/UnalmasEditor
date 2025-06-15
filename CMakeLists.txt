@@ -28,6 +28,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         pieloader.h pieloader.cpp
         editor.h editor.cpp
         unalmas_datafile.h unalmas_datafile.cpp
+        scene.h scene.cpp
+        unalmas_guid.h unalmas_guid.cpp
+        project.h project.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET UnalmasEditor APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

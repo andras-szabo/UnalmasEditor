@@ -20,10 +20,13 @@ public:
 
 private slots:
     void on_actionOpen_triggered();
+    void on_actionSave_Project_triggered();
     void LaunchCommunicationThreads();
 
 private:
     Ui::MainWindow* _ui { nullptr };
     Unalmas::Editor* _editor { nullptr };
+
+    void EnableSaveProjectMenu(bool state);
 };
 #endif // MAINWINDOW_H

@@ -1,15 +1,21 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include <QObject>
+#include <QVector>
+
 #include "unalmas_sockets.h"
 #include "unalmas_datafile.h"
 #include "pieloader.h"
+#include "scene.h"
 
 namespace Unalmas
 {
 
-class Editor
+class Editor : public QObject
 {
+    Q_OBJECT
+
 public:
     Editor();
 
@@ -21,6 +27,9 @@ public:
     void StartPie(const std::string& gameRuntimeDllPath);
     void HandleMessages(std::stop_token stopToken);
 
+signals:
+    void OnPieClosed();
+
 private:
     Unalmas::WinSockEntity _wsEntity;
     Unalmas::PieLoader _pieLoader;
@@ -28,6 +37,8 @@ private:
     void ExtractScriptDatabase(const std::string& handshakePayload);
     std::mutex _script_database_mutex;
     Unalmas::DataFile _scriptDatabase;
+
+    QVector<Scene> _activeScenes;
 
     // TODO - these feel like they belong to a different level of abstraction
     Unalmas::ServerSocketConfig _serverSocketConfig;

@@ -9,6 +9,11 @@ MainWindow::MainWindow(Unalmas::Editor* editor, QWidget* parent)
     : QMainWindow(parent), _ui(new Ui::MainWindow), _editor { editor }
 {
     _ui->setupUi(this);
+
+    EnableSaveProjectMenu(false);
+
+    connect(editor, &Unalmas::Editor::OnPieClosed,
+            this, [&]{ EnableSaveProjectMenu(false); });
 }
 
 MainWindow::~MainWindow()
@@ -21,11 +26,18 @@ void MainWindow::LaunchCommunicationThreads()
     _editor->LaunchCommunicationThreads();
 }
 
+void MainWindow::EnableSaveProjectMenu(bool state)
+{
+    _ui->actionSave_Project->setEnabled(state);
+}
+
+void MainWindow::on_actionSave_Project_triggered()
+{
+    qDebug() << "save project clicked";
+}
+
 void MainWindow::on_actionOpen_triggered()
 {
-    //pieLoader.
-    //StartPie("C:\\Users\\andra\\source\\repos\\Unalmas_Game\\x64\\Debug\\UnalmasGameRuntime.dll");
-
     QString fileName = QFileDialog::getOpenFileName(
         this,		// parent
         "Open File",
@@ -56,11 +68,18 @@ void MainWindow::on_actionOpen_triggered()
             qDebug() << "Waiting for pie connection...\n";
             _editor->WaitForPieConnection();
             qDebug() << "Pie connected.\n";
+
+            //_editor->SetGameDllPath(fileName);
         });
 
         auto* watcher = new QFutureWatcher<void>();
 
         connect(watcher, &QFutureWatcher<void>::finished, dialog, &QDialog::accept);
+        //connect(watcher, &QFutureWatcher<void>::finished, this, &MainWindow::EnableSaveProjectMenu);
+
+        connect(watcher, &QFutureWatcher<void>::finished,
+                this,[&]{ EnableSaveProjectMenu(true); });
+
         connect(watcher, &QFutureWatcher<void>::finished, this, &MainWindow::LaunchCommunicationThreads);
         connect(dialog, &QDialog::accepted, dialog, &QObject::deleteLater);
         connect(watcher, &QFutureWatcher<void>::finished, watcher, &QObject::deleteLater);

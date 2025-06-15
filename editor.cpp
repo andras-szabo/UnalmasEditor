@@ -112,6 +112,8 @@ void Editor::HandleMessages(std::stop_token stopToken)
         _pieLoader.GetPieStopSource().request_stop();
         _networkStopSource.request_stop();
     }
+
+    emit OnPieClosed();
 }
 
 void Editor::ExtractScriptDatabase(const std::string& handshakePayload)
@@ -121,6 +123,9 @@ void Editor::ExtractScriptDatabase(const std::string& handshakePayload)
         std::lock_guard<std::mutex> dbLock(_script_database_mutex);
         _scriptDatabase = Unalmas::DataFile::FromString(handshakePayload);
     }
+
+    //TODO remove
+    qDebug() << _scriptDatabase.ToString();
 }
 
 } // namespace Unalmas
