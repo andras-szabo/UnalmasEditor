@@ -8,6 +8,7 @@
 #include "unalmas_datafile.h"
 #include "pieloader.h"
 #include "scene.h"
+#include "project.h"
 
 namespace Unalmas
 {
@@ -27,6 +28,9 @@ public:
     void StartPie(const std::string& gameRuntimeDllPath);
     void HandleMessages(std::stop_token stopToken);
 
+    void SetGameDllPath(const QString& path);
+    void SaveProject();
+
 signals:
     void OnPieClosed();
 
@@ -38,6 +42,7 @@ private:
     std::mutex _script_database_mutex;
     Unalmas::DataFile _scriptDatabase;
 
+    Project _project;
     QVector<Scene> _activeScenes;
 
     // TODO - these feel like they belong to a different level of abstraction

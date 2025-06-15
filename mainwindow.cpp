@@ -33,7 +33,7 @@ void MainWindow::EnableSaveProjectMenu(bool state)
 
 void MainWindow::on_actionSave_Project_triggered()
 {
-    qDebug() << "save project clicked";
+    _editor->SaveProject();
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -68,18 +68,13 @@ void MainWindow::on_actionOpen_triggered()
             qDebug() << "Waiting for pie connection...\n";
             _editor->WaitForPieConnection();
             qDebug() << "Pie connected.\n";
-
-            //_editor->SetGameDllPath(fileName);
+            _editor->SetGameDllPath(fileName);
         });
 
         auto* watcher = new QFutureWatcher<void>();
 
         connect(watcher, &QFutureWatcher<void>::finished, dialog, &QDialog::accept);
-        //connect(watcher, &QFutureWatcher<void>::finished, this, &MainWindow::EnableSaveProjectMenu);
-
-        connect(watcher, &QFutureWatcher<void>::finished,
-                this,[&]{ EnableSaveProjectMenu(true); });
-
+        connect(watcher, &QFutureWatcher<void>::finished, this,[&]{ EnableSaveProjectMenu(true); });
         connect(watcher, &QFutureWatcher<void>::finished, this, &MainWindow::LaunchCommunicationThreads);
         connect(dialog, &QDialog::accepted, dialog, &QObject::deleteLater);
         connect(watcher, &QFutureWatcher<void>::finished, watcher, &QObject::deleteLater);

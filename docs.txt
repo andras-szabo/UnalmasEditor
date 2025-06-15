@@ -1,0 +1,82 @@
+Unalmas Editor Documentation (staging area, in bullet points)
+
+Basic architecture ========
+Unalmas_Editor is a process that handles the Qt-based UI, to interact with
+a project (view, edit, and modify a project and its contained scenes).
+When loading a game project, the editor launches a separate process, called
+Pie (play-in-editor). Pie is responsible for loading the game dll, and
+invoking its various methods.
+
+If Pie crashes, the Editor can still keep running, and it can still keep
+serialized state of the project. It also opens up the possibility of running
+Pie on a device, or on a remote machine.
+
+The Editor and Pie are communicating via TCP/IP sockets.
+
+Communication ========
+Editor acts as a server, Pie as a client to that server (in so far as sockets
+are concerned). It's expected that the server is only ever going to be communicating
+with a single client.
+
+When sending a message, the first thing to send is a message header, which is
+a wrapper around two integers, describing the type of message, and its size in
+bytes. Following this, the actual message is expected to be sent, in exactly
+as many bytes as described by the header. So the pattern is always:
+Header - Message; Header - Message; Header - Message etc.
+
+... TBC ...
+
+- So we should have a call that describes the currently loaded scene(s). How to
+  implement this?
+  	= on the one hand, we could get everything via PIE: scene X was loaded,
+	  and it contains the following gameObjects.
+	= on the other hand, we could also do it such that PIE just tells the
+	  editor, by the way, scene described with file X has been loaded.
+	==> But I think the first approach is better, because this means that
+	    we could still load things on device. So perhaps the editor shouldn't
+	    do any kind of loading on its own.
+
+==> Ok so maybe next steps:
+	- once handshake is done, editor sends a "load starting scene" 
+	  message to Pie.
+	- Pie looks up the scene.
+	- Once the scene has been found, we could start loading - rather:
+	  streaming - it. How to do that nicely though? What if we have a
+	  gigantic file? Should we load the whole thing at once? Would an
+	  Unalmas_DataFile be amenable to being streamed? Hmm. What if we
+	  have a large and deep hierarchy?
+	  	=> Maybe we could do it such that:
+			- on a background thread: open the file. read the
+			  first object in the scene - but what if the scene
+			  has only a single object, pinning the whole
+			  hierarchy below it?
+
+			- I guess this is some food for thought.
+
+			- ... but perhaps we can live with that? Perhaps
+			  we can see where and how it breaks; compression
+			  based programming and all...?
+
+			- so: open the file, and read the first object from it.
+			- once we have this serialized, stream it to the editor.
+			- but what if this first GameObject references another
+			  one in the scene?
+
+			- so say we've loaded a GO, in serialized form, we now
+			  have it as a UDF.
+			- create GO.
+			- iter thru components. add a component, and call
+			  Deserialize on it.
+			- say we have a serialized reference to anothe GO,
+			  via GUID, which is not loaded yet. Ok, so at the time
+			  of serialization don't do anything, but make a note
+			  that this will have to be resolved later.
+			- then, once we finished loading the scene, we can resolve
+			  the GUIDs.
+			  	- so maybe we could have a "SceneReference" /
+				  "AssetReference" class for this.
+
+			- OK, but then, what to tell the editor? Should we send
+			  the GO UDF immediately?
+	
+	

@@ -12,7 +12,12 @@ Project::Project(const Unalmas::DataFile &serialized)
     }
 }
 
-Unalmas::DataFile Project::Serialize()
+bool Project::IsEmpty() const
+{
+    return dllPath.isEmpty();
+}
+
+Unalmas::DataFile Project::Serialize() const
 {
     Unalmas::DataFile data;
 

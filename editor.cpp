@@ -116,6 +116,19 @@ void Editor::HandleMessages(std::stop_token stopToken)
     emit OnPieClosed();
 }
 
+void Editor::SetGameDllPath(const QString& path)
+{
+    _project.dllPath = path;
+}
+
+void Editor::SaveProject()
+{
+    if (!_project.IsEmpty())
+    {
+        // TODO
+    }
+}
+
 void Editor::ExtractScriptDatabase(const std::string& handshakePayload)
 {
     if (!handshakePayload.empty() && handshakePayload != "--empty--")

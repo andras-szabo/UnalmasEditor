@@ -8,12 +8,14 @@
 
 struct Project
 {
+    Project() = default;
     Project(const Unalmas::DataFile& serialized);
 
     QString dllPath;
     QVector<QString> startupScenes;
 
-    Unalmas::DataFile Serialize();
+    bool IsEmpty() const;
+    Unalmas::DataFile Serialize() const;
 };
 
 #endif // PROJECT_H
