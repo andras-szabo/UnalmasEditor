@@ -10,10 +10,10 @@ MainWindow::MainWindow(Unalmas::Editor* editor, QWidget* parent)
 {
     _ui->setupUi(this);
 
-    EnableSaveProjectMenu(false);
+    //EnableSaveProjectMenu(false);
 
-    connect(editor, &Unalmas::Editor::OnPieClosed,
-            this, [&]{ EnableSaveProjectMenu(false); });
+    //connect(editor, &Unalmas::Editor::OnPieClosed,
+     //       this, [&]{ EnableSaveProjectMenu(false); });
 }
 
 MainWindow::~MainWindow()
@@ -51,7 +51,7 @@ void MainWindow::on_actionOpen_triggered()
 
         _editor->StartPie(fileName.toStdString());
 
-        auto* dialog = new QProgressDialog("Please wait...",
+        /*auto* dialog = new QProgressDialog("Please wait...",
                                            QString(),
                                            0,
                                            0,
@@ -61,25 +61,30 @@ void MainWindow::on_actionOpen_triggered()
         dialog->setCancelButton(nullptr);
         dialog->setMinimumDuration(0);
         dialog->setWindowTitle("Loading...");
-        dialog->show();
+        dialog->show();*/
 
-        QFuture<void> future = QtConcurrent::run([&]
+        _editor->WaitForPieConnection();
+        _editor->SetGameDllPath(fileName);
+
+        /*QFuture<void> future = QtConcurrent::run([&]
         {
             qDebug() << "Waiting for pie connection...\n";
             _editor->WaitForPieConnection();
             qDebug() << "Pie connected.\n";
-            _editor->SetGameDllPath(fileName);
+            //_editor->SetGameDllPath(fileName);
         });
 
         auto* watcher = new QFutureWatcher<void>();
 
         connect(watcher, &QFutureWatcher<void>::finished, dialog, &QDialog::accept);
-        connect(watcher, &QFutureWatcher<void>::finished, this,[&]{ EnableSaveProjectMenu(true); });
+
+        //connect(watcher, &QFutureWatcher<void>::finished, this,[&]{ EnableSaveProjectMenu(true); });
+
         connect(watcher, &QFutureWatcher<void>::finished, this, &MainWindow::LaunchCommunicationThreads);
         connect(dialog, &QDialog::accepted, dialog, &QObject::deleteLater);
         connect(watcher, &QFutureWatcher<void>::finished, watcher, &QObject::deleteLater);
 
-        watcher->setFuture(future);
+        watcher->setFuture(future);*/
     }
 }
 

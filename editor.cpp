@@ -123,10 +123,17 @@ void Editor::SetGameDllPath(const QString& path)
 
 void Editor::SaveProject()
 {
+    /*
     if (!_project.IsEmpty())
     {
-        // TODO
+        qDebug() << "Trying to save project.\n";
+        const auto project = _project.Serialize();
+        qDebug() << project.ToString();
     }
+    else
+    {
+        qDebug() << "_project is empty.";
+    }*/
 }
 
 void Editor::ExtractScriptDatabase(const std::string& handshakePayload)

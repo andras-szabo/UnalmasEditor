@@ -90,13 +90,15 @@ class ServerSocketWrapper : public SocketWrapper
 public:
     ServerSocketWrapper() = default;
     ServerSocketWrapper(int port, int sendBufSize, bool isBlocking);
+    ServerSocketWrapper& operator=(const ServerSocketWrapper& other);
 
     bool BlockUntilListenOrError(std::stop_token);
     SOCKET BlockUntilAcceptConnectionOrError(std::stop_token);
-    SOCKET GetConnectedClientSocket() const;
+    SOCKET GetConnectedClientSocket();
     bool ListenAndAccept(std::stop_token);
 
 protected:
+    std::mutex _ccsMutex;
     SOCKET _connectedClientSocket { INVALID_SOCKET };
 };
 
@@ -120,7 +122,7 @@ public:
     SOCKET CreateServerSocket(const ServerSocketConfig& config);
     SOCKET CreateServerSocket(int port, int sendBufSize, bool isBlocking, bool startListening);
     SOCKET CreateClientSocket(int port, bool isBlocking);
-    bool TryGetConnectedClientSocket(OUT SOCKET& socket) const;
+    bool TryGetConnectedClientSocket(OUT SOCKET& socket);
 
 private:
     WSADATA _wsaData;
@@ -131,6 +133,7 @@ private:
 
     std::jthread _serverThread;
     std::stop_source _serverStopSource;
+    std::mutex _serverSocketMutex;
 };
 } // namespace Unalmas
 #endif // UNALMAS_SOCKETS_H

@@ -367,8 +367,18 @@ ServerSocketWrapper::ServerSocketWrapper(int port, int maxSendSize, bool isBlock
     }
 }
 
-SOCKET ServerSocketWrapper::GetConnectedClientSocket() const
+ServerSocketWrapper &ServerSocketWrapper::operator=(const ServerSocketWrapper &other)
 {
+    _isCreated = other._isCreated;
+    _socket = other._socket;
+    _socketAddress = other._socketAddress;
+
+    return *this;
+}
+
+SOCKET ServerSocketWrapper::GetConnectedClientSocket()
+{
+    std::lock_guard<std::mutex> lock(_ccsMutex);
     return _connectedClientSocket;
 }
 
@@ -436,18 +446,28 @@ SOCKET ServerSocketWrapper::BlockUntilAcceptConnectionOrError(std::stop_token st
 
 bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
 {
-    _connectedClientSocket = INVALID_SOCKET;
+    {
+        std::lock_guard<std::mutex> lock(_ccsMutex);
+        _connectedClientSocket = INVALID_SOCKET;
+    }
+
+    SOCKET clientSocket = INVALID_SOCKET;
 
     if (BlockUntilListenOrError(stopToken))
     {
-        _connectedClientSocket = BlockUntilAcceptConnectionOrError(stopToken);
+        clientSocket = BlockUntilAcceptConnectionOrError(stopToken);
+        if (!stopToken.stop_requested())
+        {
+            std::lock_guard<std::mutex> lock(_ccsMutex);
+            _connectedClientSocket = clientSocket;
+        }
     }
 
-    bool isOK = _connectedClientSocket != INVALID_SOCKET;
+    bool isOK = clientSocket != INVALID_SOCKET;
 
     qDebug() << "ListenAndAccept finished; success? " << isOK;
 
-    return _connectedClientSocket != INVALID_SOCKET;
+    return isOK;
 }
 
 ClientSocketWrapper::ClientSocketWrapper(int port, bool isBlocking)
@@ -525,6 +545,7 @@ SOCKET WinSockEntity::CreateServerSocket(int port, int sendBufSize, bool isBlock
         _serverSocket = ServerSocketWrapper(port, sendBufSize, isBlocking);
     }
 
+    SOCKET serverSocket = _serverSocket.GetSocket();
     if (_serverSocket.IsCreated())
     {
         if (startListening)
@@ -537,7 +558,7 @@ SOCKET WinSockEntity::CreateServerSocket(int port, int sendBufSize, bool isBlock
         }
     }
 
-    return _serverSocket.GetSocket();
+    return serverSocket;
 }
 
 SOCKET WinSockEntity::CreateClientSocket(int port, bool isBlocking)
@@ -546,7 +567,7 @@ SOCKET WinSockEntity::CreateClientSocket(int port, bool isBlocking)
     return _clientSocket.GetSocket();
 }
 
-bool WinSockEntity::TryGetConnectedClientSocket(SOCKET &socket) const
+bool WinSockEntity::TryGetConnectedClientSocket(SOCKET &socket)
 {
     socket = _serverSocket.GetConnectedClientSocket();
     return socket != INVALID_SOCKET;
