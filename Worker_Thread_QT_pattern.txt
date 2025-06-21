@@ -1,0 +1,52 @@
+// First the class structure, then comments:
+
+class Worker : public QObject
+{
+	Q_OBJECT
+
+public:
+	Worker() {
+		_thread.reset(new QThread);
+		moveToThread(_thread.get());
+		_thread->start();
+	}
+
+	~Worker() {
+		QMetaObject::invokeMethod(this, "cleanup");
+		_thread->wait();
+	}
+
+private slots:
+	void cleanup() {
+		// clean up resources
+		_thread->quit();
+	}
+
+private:
+	std::unique_ptr<QThread> _thread;
+};
+
+So Worker is just a handle to some task executed on the thread;
+and it's a QObject, and can take advantage of an event loop
+(signals and slots).
+
+The QThread object is owned by _thread; this being a unique_ptr,
+when Worker is destroyed, it will dispose of the thread. The thread
+gets allocated in Worker's ctor.
+
+"
+bool QObject::moveToThread(QThread* targetThread)
+Changes the thread affinity for this object and its children, and returns true on success.
+The object cannot be moved it if has a parent. Event processing will continue in the
+targetThread.
+"
+
+So with moveToThread, we're saying: associate this Worker object with the
+_thread, meaning that it will process events in the event loop that occurs
+on that thread.
+
+This is why, in the dtor, "cleanup" is invoked so. The dtor is expected to be called
+on the thread that created the Worker; but with this setup, we'll make sure that
+the cleanup happens on the thread that - presumably - uses the resources that are 
+allocated, and that need cleaning up.
+
