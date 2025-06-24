@@ -11,7 +11,7 @@ void StartPieProcess(std::stop_token stopToken,
                      std::mutex& pieMutex,
                      OUT bool& didPieFinish)
 {
-    qDebug() << "Creating process";
+    qInfo() << "Creating process";
 
     LPCWSTR applicationName = L"C:\\Users\\andra\\source\\repos\\Unalmas\\x64\\Debug\\PIE.exe";
     STARTUPINFO startupInfo;
@@ -42,7 +42,7 @@ void StartPieProcess(std::stop_token stopToken,
 
     if (couldCreateProcess)
     {
-        constexpr DWORD piePollDurationMS = 1000;
+        constexpr DWORD piePollDurationMS = 500;
         bool didProcessExit { false };
         while (!didProcessExit && !stopToken.stop_requested())
         {
@@ -66,7 +66,7 @@ void StartPieProcess(std::stop_token stopToken,
         if (!didProcessExit)
         {
             // Try to terminate child process
-            qDebug() << "Terminating PIE";
+            qInfo() << "Terminating PIE";
             constexpr unsigned int exitCode = 1u;
             TerminateProcess(processInfo.hProcess, exitCode);
         }
@@ -81,7 +81,7 @@ void StartPieProcess(std::stop_token stopToken,
     }
     else
     {
-        qDebug() << "Couldn't create PIE process.";
+        qInfo() << "Couldn't create PIE process.";
     }
 }
 

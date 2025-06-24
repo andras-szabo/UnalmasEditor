@@ -1,7 +1,9 @@
 #include "editor.h"
+#include <iostream>
 #include <qdatetime.h>
 #include <qdebug.h>
 #include <qlogging.h>
+#include <qthread.h>
 
 namespace Unalmas
 {
@@ -17,6 +19,12 @@ Editor::Editor()
 {
 }
 
+Editor::~Editor()
+{
+    _networkStopSource.request_stop();
+    qDebug() << "Editor destroyed.\n";
+}
+
 void Editor::CreateServerSocket()
 {
     _serverSocket = _wsEntity.CreateServerSocket(_serverSocketConfig);
@@ -24,11 +32,13 @@ void Editor::CreateServerSocket()
 
 void Editor::WaitForPieConnection()
 {
+    qInfo() << "wait for pie connection";
     SOCKET connectedClientSocket { INVALID_SOCKET };
     while (!_wsEntity.TryGetConnectedClientSocket(OUT connectedClientSocket))
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    qInfo() << "connected client socket got.";
 }
 
 void Editor::LaunchCommunicationThreads()
@@ -39,7 +49,7 @@ void Editor::LaunchCommunicationThreads()
     std::stop_source newStopSource;
     _networkStopSource.swap(newStopSource);
 
-    _network_thread = std::jthread(Unalmas::CommunicationThread,
+    _network_jthread = std::jthread(Unalmas::CommunicationThread,
                                    _networkStopSource.get_token(),
                                    connectedClientSocket,
                                    std::ref(_inbox),
@@ -62,7 +72,7 @@ void Editor::StartPie(const std::string& gameRuntimeDllPath)
 
 void Editor::HandleMessages(std::stop_token stopToken)
 {
-    qDebug() << "Handling messages yeah";
+    qInfo() << "Handling messages yeah";
 
     bool shouldDisconnect { false };
     bool didFinishHandshake { false };
@@ -73,15 +83,15 @@ void Editor::HandleMessages(std::stop_token stopToken)
             while (!_inbox.empty())
             {
                 const auto& incomingMsg = _inbox.front();
-                //qDebug() << "[SERVER] Incoming msg type: " << static_cast<int>(incomingMsg.type) << "\n";
+                //qInfo() << "[SERVER] Incoming msg type: " << static_cast<int>(incomingMsg.type) << "\n";
                 switch (incomingMsg.type)
                 {
                 case Unalmas::MessageType::Undefined:
-                    qDebug() << "[SERVER] Incoming msg payload: " << incomingMsg.payload << "at: " << QTime::currentTime() << "\n";
+                    qInfo() << "[SERVER] Incoming msg payload: " << incomingMsg.payload << "at: " << QTime::currentTime() << "\n";
                     break;
 
                 case Unalmas::MessageType::Handshake:
-                    qDebug() << "[SERVER] Incoming handshake!";
+                    qInfo() << "[SERVER] Incoming handshake!";
                     ExtractScriptDatabase(incomingMsg.payload);
                     didFinishHandshake = true;
                     break;
@@ -113,6 +123,7 @@ void Editor::HandleMessages(std::stop_token stopToken)
         _networkStopSource.request_stop();
     }
 
+    qInfo() << "Pie closed.";
     emit OnPieClosed();
 }
 

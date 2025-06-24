@@ -1,6 +1,7 @@
 #ifndef UNALMAS_SOCKETS_H
 #define UNALMAS_SOCKETS_H
 
+#include <qthread.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <vector>
@@ -90,12 +91,19 @@ class ServerSocketWrapper : public SocketWrapper
 public:
     ServerSocketWrapper() = default;
     ServerSocketWrapper(int port, int sendBufSize, bool isBlocking);
-    ServerSocketWrapper& operator=(const ServerSocketWrapper& other);
 
-    bool BlockUntilListenOrError(std::stop_token);
-    SOCKET BlockUntilAcceptConnectionOrError(std::stop_token);
+    // Non-copyable
+    ServerSocketWrapper(const ServerSocketWrapper& other) = delete;
+    ServerSocketWrapper& operator=(const ServerSocketWrapper& other) = delete;
+
+    // But moving is fine
+    ServerSocketWrapper(ServerSocketWrapper&& other);
+    ServerSocketWrapper& operator=(ServerSocketWrapper&& other);
+
+    bool BlockUntilListenOrError();
+    SOCKET BlockUntilAcceptConnectionOrError();
     SOCKET GetConnectedClientSocket();
-    bool ListenAndAccept(std::stop_token);
+    bool ListenAndAccept();
 
 protected:
     std::mutex _ccsMutex;
@@ -131,7 +139,7 @@ private:
     std::vector<SOCKET> _clientSocketsAsSeenByServer;
     ClientSocketWrapper _clientSocket;
 
-    std::jthread _serverThread;
+    QThread* _serverThread { nullptr };
     std::stop_source _serverStopSource;
     std::mutex _serverSocketMutex;
 };

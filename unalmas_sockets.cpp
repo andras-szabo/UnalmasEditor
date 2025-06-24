@@ -282,7 +282,7 @@ void CommunicationThread(std::stop_token stopToken,
     }
 
 
-    qDebug() << "Communication thread shutting down.";
+    qInfo() << "Communication thread shutting down.";
 }
 
 SocketWrapper::SocketWrapper(int port, bool isBlocking)
@@ -367,11 +367,27 @@ ServerSocketWrapper::ServerSocketWrapper(int port, int maxSendSize, bool isBlock
     }
 }
 
-ServerSocketWrapper &ServerSocketWrapper::operator=(const ServerSocketWrapper &other)
+ServerSocketWrapper::ServerSocketWrapper(ServerSocketWrapper&& other)
 {
     _isCreated = other._isCreated;
     _socket = other._socket;
     _socketAddress = other._socketAddress;
+
+    other._isCreated = false;
+    other._socket = INVALID_SOCKET;
+}
+
+ServerSocketWrapper& ServerSocketWrapper::operator=(ServerSocketWrapper&& other)
+{
+    if (_socket != other._socket)
+    {
+        _isCreated = other._isCreated;
+        _socket = other._socket;
+        _socketAddress = other._socketAddress;
+
+        other._isCreated = false;
+        other._socket = INVALID_SOCKET;
+    }
 
     return *this;
 }
@@ -382,23 +398,27 @@ SOCKET ServerSocketWrapper::GetConnectedClientSocket()
     return _connectedClientSocket;
 }
 
-bool ServerSocketWrapper::BlockUntilListenOrError(std::stop_token stopToken)
+bool ServerSocketWrapper::BlockUntilListenOrError()
 {
     if (!_isCreated || _socket == INVALID_SOCKET)
     {
+        qInfo() << "BlockUntilListenOrError";
         return false;
     }
 
     // TODO - if this is so, then perhaps we can get rid of the vector of client sockets?
     constexpr int maxIncomingConnections = 1;
 
-    while (!stopToken.stop_requested())
+    qInfo() << "BlockUntilListenOrError\n";
+
+    while (true)
     {
         const int listenResult = listen(_socket, maxIncomingConnections);
         if (listenResult == SOCKET_ERROR)
         {
             if (WSAGetLastError() != WSAEWOULDBLOCK)
             {
+                qInfo() << WSAGetLastError();
                 return false;
             }
             else
@@ -413,14 +433,14 @@ bool ServerSocketWrapper::BlockUntilListenOrError(std::stop_token stopToken)
     return true;
 }
 
-SOCKET ServerSocketWrapper::BlockUntilAcceptConnectionOrError(std::stop_token stopToken)
+SOCKET ServerSocketWrapper::BlockUntilAcceptConnectionOrError()
 {
     if (!_isCreated || _socket == INVALID_SOCKET)
     {
         return INVALID_SOCKET;
     }
 
-    while (!stopToken.stop_requested())
+    while (true)
     {
         SOCKET acceptSocket = accept(_socket, nullptr, nullptr);
         if (acceptSocket == INVALID_SOCKET)
@@ -436,15 +456,13 @@ SOCKET ServerSocketWrapper::BlockUntilAcceptConnectionOrError(std::stop_token st
             }
         }
 
-        //TODO
-        // std::cout << "Yay, connected!\n";
         return acceptSocket;
     }
 
     return INVALID_SOCKET;
 }
 
-bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
+bool ServerSocketWrapper::ListenAndAccept()
 {
     {
         std::lock_guard<std::mutex> lock(_ccsMutex);
@@ -453,10 +471,9 @@ bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
 
     SOCKET clientSocket = INVALID_SOCKET;
 
-    if (BlockUntilListenOrError(stopToken))
+    if (BlockUntilListenOrError())
     {
-        clientSocket = BlockUntilAcceptConnectionOrError(stopToken);
-        if (!stopToken.stop_requested())
+        clientSocket = BlockUntilAcceptConnectionOrError();
         {
             std::lock_guard<std::mutex> lock(_ccsMutex);
             _connectedClientSocket = clientSocket;
@@ -464,8 +481,6 @@ bool ServerSocketWrapper::ListenAndAccept(std::stop_token stopToken)
     }
 
     bool isOK = clientSocket != INVALID_SOCKET;
-
-    qDebug() << "ListenAndAccept finished; success? " << isOK;
 
     return isOK;
 }
@@ -503,9 +518,16 @@ WinSockEntity::WinSockEntity()
 
 WinSockEntity::~WinSockEntity()
 {
+    qInfo() << "WinSockEntity going.\n";
     if (_isCreated)
     {
         _serverStopSource.request_stop();
+
+        if (_serverThread != nullptr)
+        {
+            _serverThread->exit();
+            _serverThread = nullptr;
+        }
 
         WSACleanup();
         _isCreated = false;
@@ -546,17 +568,25 @@ SOCKET WinSockEntity::CreateServerSocket(int port, int sendBufSize, bool isBlock
     }
 
     SOCKET serverSocket = _serverSocket.GetSocket();
-    if (_serverSocket.IsCreated())
+    if (_serverSocket.IsCreated() && serverSocket != INVALID_SOCKET)
     {
         if (startListening)
         {
-            std::stop_source newStopSource;
-            _serverStopSource.swap(newStopSource);
-            _serverThread = std::jthread(&ServerSocketWrapper::ListenAndAccept,
-                                         &_serverSocket,
-                                         _serverStopSource.get_token());
+            if (_serverThread != nullptr)
+            {
+                _serverThread->exit();
+            }
+
+            _serverThread = QThread::create(&ServerSocketWrapper::ListenAndAccept, &_serverSocket);
+            _serverThread->start();
         }
     }
+    else
+    {
+        qInfo() << "Invalid socket.\n";
+    }
+
+    qInfo() << "CreateServerSocket done.\n";
 
     return serverSocket;
 }

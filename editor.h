@@ -19,6 +19,7 @@ class Editor : public QObject
 
 public:
     Editor();
+    ~Editor();
 
     //TODO - this seems like it belongs to a different level of abstraction
     void CreateServerSocket();
@@ -53,7 +54,9 @@ private:
     std::queue<Unalmas::TypedMessage> _outbox;
     std::mutex _message_queue_mutex;
 
-    std::jthread _network_thread;
+    QThread* _network_thread;
+
+    std::jthread _network_jthread;
     std::jthread _handshake_thread;
     std::jthread _message_thread;
 };

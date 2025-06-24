@@ -14,6 +14,5 @@ int main(int argc, char *argv[])
     w.show();
 
     auto err = a.exec();
-
     return err;
 }

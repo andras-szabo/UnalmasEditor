@@ -18,6 +18,9 @@ public:
     MainWindow(Unalmas::Editor* editor, QWidget *parent = nullptr);
     ~MainWindow();
 
+    void Init();
+
+
 private slots:
     void on_actionOpen_triggered();
     void on_actionSave_Project_triggered();
