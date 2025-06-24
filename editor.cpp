@@ -1,9 +1,12 @@
 #include "editor.h"
+#include <filesystem>
 #include <iostream>
 #include <qdatetime.h>
 #include <qdebug.h>
 #include <qlogging.h>
 #include <qthread.h>
+#include <fstream>
+#include <string>
 
 namespace Unalmas
 {
@@ -67,6 +70,27 @@ void Editor::LaunchCommunicationThreads()
 
 void Editor::StartPie(const std::string& gameRuntimeDllPath)
 {
+    // Let's see; if we're loading a .udf, then
+    // try to extract the dll path
+    if (gameRuntimeDllPath.ends_with(".udf"))
+    {
+        std::ifstream projectFile(gameRuntimeDllPath);
+        if (projectFile.is_open() == false)
+        {
+            std::cerr << "Couldn't open udf file";
+        }
+        else
+        {
+            qInfo() << "Trying to extract dll path...";
+            const auto project = Unalmas::DataFile::FromStream(projectFile);
+            const std::string extractedPath = project["DllPath"].GetString();
+            qInfo() << "Extracted: " << extractedPath << "\n";
+
+            _pieLoader.StartPie(extractedPath);
+            return;
+        }
+    }
+
     _pieLoader.StartPie(gameRuntimeDllPath);
 }
 
@@ -134,17 +158,29 @@ void Editor::SetGameDllPath(const QString& path)
 
 void Editor::SaveProject()
 {
-    /*
     if (!_project.IsEmpty())
     {
         qDebug() << "Trying to save project.\n";
         const auto project = _project.Serialize();
-        qDebug() << project.ToString();
+        const std::string asString = project.ToString();
+
+        // TODO where to put this functionality?
+        std::filesystem::path projectPath = "unalmas_project.udf";
+        std::ofstream projectFile(projectPath);
+        if (projectFile.is_open() == false)
+        {
+            std::cerr << "Error: couldn't open the file for writing.\n";
+        }
+        else
+        {
+            projectFile << asString;
+            qInfo() << "Saved file" << projectPath.string() << "\n";
+        }
     }
     else
     {
         qDebug() << "_project is empty.";
-    }*/
+    }
 }
 
 void Editor::ExtractScriptDatabase(const std::string& handshakePayload)

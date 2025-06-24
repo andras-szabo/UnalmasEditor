@@ -48,8 +48,8 @@ void MainWindow::on_actionOpen_triggered()
     QString fileName = QFileDialog::getOpenFileName(
         this,		// parent
         "Open File",
-        "C:\\Users\\andra\\source\\repos\\Unalmas_Game\\x64\\Debug",			// initial directory
-        "Dll files (*.dll);;All files (*)" // file filter
+        "", // "C:\\Users\\andra\\source\\repos\\Unalmas_Game\\x64\\Debug",			// initial directory
+        "UDF files (*.udf);;Dll files (*.dll);;All files (*)" // file filter
         );
 
     if (!fileName.isEmpty())
@@ -70,11 +70,11 @@ void MainWindow::on_actionOpen_triggered()
 
         connect(dialog, &QDialog::accepted, dialog, &QObject::deleteLater);
 
-        QFuture<void> future = QtConcurrent::run([&]
+        QFuture<void> future = QtConcurrent::run([&, fileName]()
         {
-            qInfo() << "Waiting for pie connection...\n";
+            //qInfo() << "Waiting for pie connection...\n";
             _editor->WaitForPieConnection();
-            qInfo() << "Pie connected.\n";
+            //qInfo() << "Pie connected.\n";
             _editor->SetGameDllPath(fileName);
         });
 
